@@ -1,0 +1,113 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  name             String         @unique
+  password         String?
+  memberships      GroupMember[]
+  expensesPaid     Expense[]      @relation("PaidExpenses")
+  splits           ExpenseSplit[]
+  settlementsPaid  Settlement[]   @relation("PaidSettlements")
+  settlementsRecv  Settlement[]   @relation("ReceivedSettlements")
+}
+
+model Group {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?
+  members     GroupMember[]
+  expenses    Expense[]
+  settlements Settlement[]
+}
+
+model GroupMember {
+  id       Int       @id @default(autoincrement())
+  groupId  Int
+  userId   Int
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model Expense {
+  id          Int            @id @default(autoincrement())
+  groupId     Int
+  description String
+  paidById    Int
+  amount      Float
+  currency    String         @default("INR")
+  amountInInr Float
+  splitType   String         @default("equal") // equal, unequal, percentage, share
+  date        DateTime
+  notes       String?
+  status      String         @default("ACTIVE") // ACTIVE, DELETED
+
+  group  Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  paidBy User           @relation("PaidExpenses", fields: [paidById], references: [id], onDelete: Cascade)
+  splits ExpenseSplit[]
+}
+
+model ExpenseSplit {
+  id        Int   @id @default(autoincrement())
+  expenseId Int
+  userId    Int
+  amount    Float // The amount this user owes for this expense in INR
+
+  // Optional columns to preserve the original split details
+  shareRatio Float?
+  percentage Float?
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+}
+
+model Settlement {
+  id           Int      @id @default(autoincrement())
+  groupId      Int
+  paidById     Int
+  receivedById Int
+  amount       Float
+  currency     String   @default("INR")
+  amountInInr  Float
+  date         DateTime
+  notes        String?
+
+  group      Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  paidBy     User  @relation("PaidSettlements", fields: [paidById], references: [id], onDelete: Cascade)
+  receivedBy User  @relation("ReceivedSettlements", fields: [receivedById], references: [id], onDelete: Cascade)
+}
+
+model ImportJob {
+  id        Int             @id @default(autoincrement())
+  fileName  String
+  status    String // PENDING, COMPLETED, FAILED
+  createdAt DateTime        @default(now())
+  anomalies ImportAnomaly[]
+}
+
+model ImportAnomaly {
+  id                  Int       @id @default(autoincrement())
+  importJobId         Int
+  rowNumber           Int
+  anomalyType         String
+  description         String
+  rawData             String
+  proposedAction      String
+  status              String // PENDING, APPROVED, REJECTED
+  resolvedExpenseData String // JSON string representation of parsed schema
+  importJob           ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+}
+
