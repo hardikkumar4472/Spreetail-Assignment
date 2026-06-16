@@ -108,4 +108,5 @@ Our stateful parser scans `expenses_export.csv` and captures **19 separate anoma
 | **38** | `SETTLEMENT_AS_EXPENSE` | Sam, "Sam deposit share", 15000 INR. | Sam pays deposit to Aisha. | **CONVERTED** to `Settlement` record. |
 | **39** | `INACTIVE_MEMBER_SPLIT_SAM` | Sam, "Housewarming drinks", April 10. | Sam charged before join date (April 15). | **APPROVED AS EXCEPTION** (Housewarming drinks include Sam explicitly). |
 | **40** | `POSTPAID_UTILITY_MISALLOCATION` | Aisha, "Electricity Apr" (April 12). Sam in split. | April utility bill covers March usage, before Sam joined. | **EXCLUDED SAM / INCLUDED MEERA** (Reallocated to Meera). |
+
 | **42** | `INCONSISTENT_SPLIT_DETAILS` | "Furniture", split_type `equal`, details listed. | Equal split has redundant details. | **IGNORED DETAILS & SPLIT EQUALLY**. |
